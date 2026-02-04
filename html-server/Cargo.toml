@@ -5,3 +5,6 @@ edition = "2024"
 [[bin]]
 name = "html-server"
 path = "src/main.rs"
+
+[dependencies]
+axum = "0.8.8"
