@@ -3,10 +3,12 @@ mod tests {
 
     #[test]
     fn receives_msg() {
-        let input = Message::HELO;
-        let output = Message::HELO;
+        let input = Message::HELO("my-domain.local".into());
 
-        let server = ServerObj::new();
+        let t_servername = String::from("server.local");
+        let output = Message::HELO(t_servername.clone());
+        let server = ServerObj::new(t_servername.clone());
+
         assert_eq!(server.send(input), output);
     }
 }
