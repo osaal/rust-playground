@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{Error, Read},
+    io::{Error, ErrorKind, Read},
 };
 
 /// Synchronous RNG provider
@@ -13,7 +13,7 @@ pub trait RNGProvider {
     /// Attempt to read bytes from the RNG provider
     ///
     /// The return propagates any IO errors or construct its own.
-    fn try_get_bytes() -> Result<Self::RNGRawByteArray, std::io::Error>;
+    fn try_get_bytes(buflen: usize) -> Result<Self::RNGRawByteArray, std::io::Error>;
 }
 
 /// Retrieve random numbers from the `/dev/random` device on Unix-like systems
@@ -21,10 +21,20 @@ pub struct UnixDevRandom {}
 
 impl RNGProvider for UnixDevRandom {
     type RNGRawByteArray = Vec<u8>;
-    fn try_get_bytes() -> Result<Vec<u8>, Error> {
+
+    fn try_get_bytes(buflen: usize) -> Result<Vec<u8>, Error> {
         // TODO: This should probably be async since /dev/random blocks until it can return...
         let mut handle = File::open("/dev/random")?;
-        let mut buf = vec![0; 16];
+
+        if buflen > isize::MAX as usize {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "`buflen` must be less than `isize::MAX`",
+            ));
+        }
+
+        let mut buf = vec![0; buflen];
+
         match handle.read_exact(&mut buf) {
             Ok(_) => Ok(buf),
             Err(e) => Err(e),
@@ -41,8 +51,15 @@ pub struct UnixDevRandomSafe {}
 impl RNGProvider for UnixDevRandomSafe {
     type RNGRawByteArray = Vec<u8>;
 
-    fn try_get_bytes() -> Result<Self::RNGRawByteArray, std::io::Error> {
-        let mut buf = vec![0u8; 16];
+    fn try_get_bytes(buflen: usize) -> Result<Self::RNGRawByteArray, std::io::Error> {
+        if buflen > isize::MAX as usize {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "`buflen` must be less than `isize::MAX`",
+            ));
+        }
+
+        let mut buf = vec![0u8; buflen];
 
         // GRND_NONBLOCK flag ensures non-blocking behavior
         const GRND_NONBLOCK: u32 = 0x0001;
@@ -80,15 +97,27 @@ mod tests {
 
     #[test]
     fn unix_dev_random() {
-        let res = UnixDevRandom::try_get_bytes();
+        let res = UnixDevRandom::try_get_bytes(16);
         assert!(res.is_ok());
-        println!("{:?}", res.unwrap())
     }
 
     #[test]
     fn unix_dev_random_safe() {
-        let res = UnixDevRandomSafe::try_get_bytes();
+        let res = UnixDevRandomSafe::try_get_bytes(16);
         assert!(res.is_ok());
-        println!("{:?}", res.unwrap())
+    }
+
+    #[test]
+    fn overflow_udr() {
+        let res = UnixDevRandom::try_get_bytes((isize::MAX as usize) + 1);
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().kind(), ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn overflow_udrs() {
+        let res = UnixDevRandomSafe::try_get_bytes((isize::MAX as usize) + 1);
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().kind(), ErrorKind::InvalidInput);
     }
 }
