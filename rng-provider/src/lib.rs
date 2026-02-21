@@ -32,6 +32,48 @@ impl RNGProvider for UnixDevRandom {
     }
 }
 
+/// Safely retrieve random numbers from the `/dev/random` device on Unix-like systems
+///
+/// This interface uses the `getrandom(2)` syscall, resulting in a safer alternative
+/// than directly reading the file.
+pub struct UnixDevRandomSafe {}
+
+impl RNGProvider for UnixDevRandomSafe {
+    type RNGRawByteArray = Vec<u8>;
+
+    fn try_get_bytes() -> Result<Self::RNGRawByteArray, std::io::Error> {
+        let mut buf = vec![0u8; 16];
+
+        // GRND_NONBLOCK flag ensures non-blocking behavior
+        const GRND_NONBLOCK: u32 = 0x0001;
+
+        // SAFETY:
+        // - GRND_NONBLOCK ensures getrandom() returns synchronously without blocking
+        // - buf.as_mut_ptr() is valid for buf.len() bytes because buf is an allocated Vec<u8>
+        let ret = unsafe {
+            unsafe extern "C" {
+                unsafe fn getrandom(buf: *mut u8, buflen: usize, flags: u32) -> isize;
+            }
+            getrandom(buf.as_mut_ptr(), buf.len(), GRND_NONBLOCK)
+        };
+
+        // getrandom returns -1 on error
+        if ret < 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+
+        // The return code should match the length of the buffer
+        if ret as usize != buf.len() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "getrandom() returned fewer bytes than requested",
+            ));
+        }
+
+        Ok(buf)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;
