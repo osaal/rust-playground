@@ -7,5 +7,8 @@ edition = "2024"
 name = "rng_provider"
 path = "src/lib.rs"
 
+[features]
+async = []
+
 [dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }

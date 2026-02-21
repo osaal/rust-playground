@@ -1,9 +1,14 @@
+#[cfg(feature = "async")]
 use std::future::Future;
+
 use std::io::{Error, ErrorKind};
 
-/// Synchronous RNG provider
+/// Trait for interacting with a random number generator provider
 ///
-/// Objects implementing this provider are expected to not block the main thread.
+/// The default trait method `try_get_bytes` is synchronous, and is expected
+/// to not block in any way.
+///
+/// For asynchronous interactions, implement `try_get_bytes_async` from the `async` feature.
 pub trait RNGProvider {
     /// The raw byte return type for the implementing provider
     type RNGRawByteArray;
@@ -19,6 +24,7 @@ pub trait RNGProvider {
     /// not a failure stemming from blocking.
     ///
     /// The function should await until its body has resolved completely before returning.
+    #[cfg(feature = "async")]
     fn try_get_bytes_async(
         buflen: usize,
     ) -> impl Future<Output = Result<Self::RNGRawByteArray, std::io::Error>>;
@@ -29,11 +35,8 @@ pub trait RNGProvider {
 /// This interface uses the `getrandom(2)` syscall, resulting in a safer alternative
 /// than directly reading the file.
 ///
-/// However, it is **not async safe**:
-///
-/// > If the `getrandom(2)` syscall would have blocked due to issues with the byte or entropy pool,
-/// the interface will return an error. See the `DESCRIPTION` section of `man 2 getrandom` for
-/// more information.
+/// If compiled with the `async` feature, it also implements the asynchronous version
+/// of the method, `try_get_bytes_async`.
 pub struct UnixDevRandom {}
 
 impl RNGProvider for UnixDevRandom {
@@ -87,6 +90,7 @@ impl RNGProvider for UnixDevRandom {
         Ok(buf)
     }
 
+    #[cfg(feature = "async")]
     fn try_get_bytes_async(
         buflen: usize,
     ) -> impl Future<Output = Result<Self::RNGRawByteArray, std::io::Error>> {
