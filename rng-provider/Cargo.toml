@@ -8,3 +8,4 @@ name = "rng_provider"
 path = "src/lib.rs"
 
 [dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }
