@@ -4,24 +4,27 @@ use std::{
 };
 
 pub trait RNGProvider {
+    /// The raw byte return type for the implementing provider
+    type RNGRawByteArray;
+
     /// Attempt to read bytes from the PRNG provider
     ///
     /// The return should propagate any IO errors or construct its own.
-    fn try_get_bytes(&self, buf: &mut [u8]) -> Result<(), std::io::Error>;
+    fn try_get_bytes() -> Result<Self::RNGRawByteArray, std::io::Error>;
 }
 
-pub struct OdDevRandom {}
+pub struct UnixDevRandom {}
 
-impl OdDevRandom {
-    pub fn new() -> Self {
-        OdDevRandom {}
-    }
-}
-
-impl RNGProvider for OdDevRandom {
-    fn try_get_bytes(&self, buf: &mut [u8]) -> Result<(), Error> {
+impl RNGProvider for UnixDevRandom {
+    type RNGRawByteArray = Vec<u8>;
+    fn try_get_bytes() -> Result<Vec<u8>, Error> {
+        // TODO: This should probably be async since /dev/random blocks until it can return...
         let mut handle = File::open("/dev/random")?;
-        handle.read_exact(buf)
+        let mut buf = vec![0; 16];
+        match handle.read_exact(&mut buf) {
+            Ok(_) => Ok(buf),
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -31,9 +34,8 @@ mod tests {
 
     #[test]
     fn returns_something() {
-        let provider = OdDevRandom::new();
-        let mut buf = [0u8; 16];
-        let res = provider.try_get_bytes(&mut buf);
-        assert!(res.is_ok())
+        let res = UnixDevRandom::try_get_bytes();
+        assert!(res.is_ok());
+        println!("{:?}", res.unwrap())
     }
 }
