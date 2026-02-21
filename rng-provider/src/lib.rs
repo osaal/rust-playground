@@ -3,16 +3,20 @@ use std::{
     io::{Error, Read},
 };
 
+/// Synchronous RNG provider
+///
+/// Objects implementing this provider are expected to not block the main thread.
 pub trait RNGProvider {
     /// The raw byte return type for the implementing provider
     type RNGRawByteArray;
 
-    /// Attempt to read bytes from the PRNG provider
+    /// Attempt to read bytes from the RNG provider
     ///
-    /// The return should propagate any IO errors or construct its own.
+    /// The return propagates any IO errors or construct its own.
     fn try_get_bytes() -> Result<Self::RNGRawByteArray, std::io::Error>;
 }
 
+/// Retrieve random numbers from the `/dev/random` device on Unix-like systems
 pub struct UnixDevRandom {}
 
 impl RNGProvider for UnixDevRandom {
