@@ -8,3 +8,4 @@ name = "colorsurvey"
 path = "src/main.rs"
 
 [dependencies]
+csv = { version = "1.4.0" }
