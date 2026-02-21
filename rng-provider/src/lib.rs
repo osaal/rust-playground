@@ -1,3 +1,45 @@
+//! Create random-number generator interfaces
+//!
+//! This library provides the [`RNGProvider`] trait for simple random number generators.
+//! It also provides an example implementation, [`UnixDevRandom`], for interfacing with
+//! [`/dev/urandom` and `/dev/random`](https://en.wikipedia.org/wiki//dev/random) on Unix-like systems.
+//!
+//! # Ready-made implementation
+//!
+//! If you are looking for a simple way to generate pseudo-random numbers on Unix,
+//! simply use [`UnixDevRandom::try_get_bytes()`]:
+//!
+//! ```rust no_run
+//! let rng = UnixDevRandom::try_get_bytes(16);
+//! assert_eq!(rng.len(), 16);
+//! ```
+//!
+//! # Custom implementations
+//!
+//! The [`RNGProvider`] trait exposes a fallible method for getting random raw bytes, `try_get_bytes`.
+//! It also offers an asynchronous version if compiled with the `async` feature gate, called `try_get_bytes_async`.
+//!
+//! In both cases, the methods take a buffer length representing how much random data to read from the provider.
+//! Note, that it is up to the implementation site to guarantee that a read of length `usize` is allowed and successful.
+//!
+//! The methods allow the implementer to define their own type of successful return data, called `RNGRawByteArray`.
+//! This can be as simple as a byte array:
+//!
+//! ```rust no_run
+//! struct MyImplementor {}
+//!
+//! impl RNGProvider for MyImplementor {
+//!     type RNGRawByteArray = Vec<u8>;
+//!     fn try_get_bytes(buflen: usize) -> Result<Self::RNGRawByteArray, std::io::Error> { }
+//! }
+//! ```
+//!
+//! Since interacting with an external RNG provider is an I/O operation, the methods are expected to return
+//! [`std::io::Error`] types. In the future, this may be eased to a default type association instead.
+//!
+//! As an example, the `UnixDevRandom` impl returns an error with [`std::io::ErrorKind::InvalidInput`] if
+//! the given `buflen` is inappropriate.
+
 #[cfg(feature = "async")]
 use std::future::Future;
 
@@ -30,9 +72,9 @@ pub trait RNGProvider {
     ) -> impl Future<Output = Result<Self::RNGRawByteArray, std::io::Error>>;
 }
 
-/// Safely retrieve random numbers from the `/dev/random` device on Unix-like systems
+/// Safely retrieve random numbers from the [`/dev/random`](https://en.wikipedia.org/wiki//dev/random) device on Unix-like systems
 ///
-/// This interface uses the `getrandom(2)` syscall, resulting in a safer alternative
+/// This interface uses the [`getrandom(2)`](https://man7.org/linux/man-pages/man2/getrandom.2.html) syscall, resulting in a safer alternative
 /// than directly reading the file.
 ///
 /// If compiled with the `async` feature, it also implements the asynchronous version
