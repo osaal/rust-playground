@@ -1,0 +1,14 @@
+[package]
+name = "rng_provider"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "rng_provider"
+path = "src/lib.rs"
+
+[features]
+async = []
+
+[dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }

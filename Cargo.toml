@@ -1,3 +1,4 @@
 [workspace]
+
+members = ["html-server", "smtp-server", "colorsurvey", "rng-provider"]
 resolver = "3"
-members = ["html-server", "smtp-server"]
