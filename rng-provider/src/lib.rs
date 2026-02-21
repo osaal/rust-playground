@@ -82,20 +82,26 @@ mod tests {
     use crate::*;
 
     #[test]
-    fn unix_dev_random_safe() {
+    fn basic_udr() {
         let res = UnixDevRandom::try_get_bytes(16);
         assert!(res.is_ok());
     }
 
     #[test]
-    fn overflow_udrs() {
+    fn large_udr() {
+        let res = UnixDevRandom::try_get_bytes(1_000_000_000);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn overflow_udr() {
         let res = UnixDevRandom::try_get_bytes((isize::MAX as usize) + 1);
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().kind(), ErrorKind::InvalidInput);
     }
 
     #[test]
-    fn zero_sized_udrs() {
+    fn zero_sized_udr() {
         let res = UnixDevRandom::try_get_bytes(0);
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().kind(), ErrorKind::InvalidInput);
