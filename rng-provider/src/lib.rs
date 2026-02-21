@@ -3,14 +3,14 @@ use std::{
     io::{Error, Read},
 };
 
-trait RNGProvider {
+pub trait RNGProvider {
     /// Attempt to read bytes from the PRNG provider
     ///
     /// The return should propagate any IO errors or construct its own.
     fn try_get_bytes(&self, buf: &mut [u8]) -> Result<(), std::io::Error>;
 }
 
-struct OdDevRandom {}
+pub struct OdDevRandom {}
 
 impl OdDevRandom {
     pub fn new() -> Self {
@@ -25,13 +25,15 @@ impl RNGProvider for OdDevRandom {
     }
 }
 
+#[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::*;
+
     #[test]
     fn returns_something() {
         let provider = OdDevRandom::new();
         let mut buf = [0u8; 16];
         let res = provider.try_get_bytes(&mut buf);
-        dbg!(res);
+        assert!(res.is_ok())
     }
 }
