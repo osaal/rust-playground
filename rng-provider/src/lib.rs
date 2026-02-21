@@ -23,16 +23,24 @@ impl RNGProvider for UnixDevRandom {
     type RNGRawByteArray = Vec<u8>;
 
     fn try_get_bytes(buflen: usize) -> Result<Vec<u8>, Error> {
-        // TODO: This should probably be async since /dev/random blocks until it can return...
-        let mut handle = File::open("/dev/random")?;
-
-        if buflen > isize::MAX as usize {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "`buflen` must be less than `isize::MAX`",
-            ));
+        match buflen {
+            val if val >= isize::MAX as usize => {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "`buflen` must be less than `isize::MAX`",
+                ));
+            }
+            val if val == 0 => {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "`buflen` must be non-zero",
+                ));
+            }
+            _ => (),
         }
 
+        // TODO: This should probably be async since /dev/random blocks until it can return...
+        let mut handle = File::open("/dev/random")?;
         let mut buf = vec![0; buflen];
 
         match handle.read_exact(&mut buf) {
@@ -52,11 +60,20 @@ impl RNGProvider for UnixDevRandomSafe {
     type RNGRawByteArray = Vec<u8>;
 
     fn try_get_bytes(buflen: usize) -> Result<Self::RNGRawByteArray, std::io::Error> {
-        if buflen > isize::MAX as usize {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "`buflen` must be less than `isize::MAX`",
-            ));
+        match buflen {
+            val if val >= isize::MAX as usize => {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "`buflen` must be less than `isize::MAX`",
+                ));
+            }
+            val if val == 0 => {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "`buflen` must be non-zero",
+                ));
+            }
+            _ => (),
         }
 
         let mut buf = vec![0u8; buflen];
@@ -117,6 +134,20 @@ mod tests {
     #[test]
     fn overflow_udrs() {
         let res = UnixDevRandomSafe::try_get_bytes((isize::MAX as usize) + 1);
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().kind(), ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn zero_sized_udr() {
+        let res = UnixDevRandom::try_get_bytes(0);
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().kind(), ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn zero_sized_udrs() {
+        let res = UnixDevRandomSafe::try_get_bytes(0);
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().kind(), ErrorKind::InvalidInput);
     }
