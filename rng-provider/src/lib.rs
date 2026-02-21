@@ -79,8 +79,15 @@ mod tests {
     use crate::*;
 
     #[test]
-    fn returns_something() {
+    fn unix_dev_random() {
         let res = UnixDevRandom::try_get_bytes();
+        assert!(res.is_ok());
+        println!("{:?}", res.unwrap())
+    }
+
+    #[test]
+    fn unix_dev_random_safe() {
+        let res = UnixDevRandomSafe::try_get_bytes();
         assert!(res.is_ok());
         println!("{:?}", res.unwrap())
     }
