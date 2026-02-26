@@ -1,0 +1,10 @@
+[package]
+name = "settings_loader"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "settings_loader"
+path = "src/lib.rs"
+
+[dependencies]
