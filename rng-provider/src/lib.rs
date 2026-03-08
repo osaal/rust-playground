@@ -9,9 +9,11 @@
 //! If you are looking for a simple way to generate pseudo-random numbers on Unix,
 //! simply use [`UnixDevRandom::try_get_bytes()`]:
 //!
-//! ```rust no_run
+//! ```
+//! # use rng_provider::UnixDevRandom;
+//! # use rng_provider::RNGProvider;
 //! let rng = UnixDevRandom::try_get_bytes(16);
-//! assert_eq!(rng.len(), 16);
+//! assert_eq!(rng.unwrap().len(), 16);
 //! ```
 //!
 //! # Custom implementations
@@ -25,7 +27,7 @@
 //! The methods allow the implementer to define their own type of successful return data, called `RNGRawByteArray`.
 //! This can be as simple as a byte array:
 //!
-//! ```rust no_run
+//! ```ignore
 //! struct MyImplementor {}
 //!
 //! impl RNGProvider for MyImplementor {
