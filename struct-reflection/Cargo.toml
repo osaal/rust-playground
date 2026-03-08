@@ -1,8 +1,0 @@
-[package]
-name = "struct_reflection"
-version = "0.1.0"
-edition = "2024"
-
-[lib]
-name = "struct_reflection"
-path = "src/lib.rs"
