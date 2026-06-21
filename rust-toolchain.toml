@@ -1,5 +1,5 @@
 # see https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file
 [toolchain]
-channel = "stable"
+channel = "nightly"
 components = ["rust-analyzer"]
-profile = "default" # rustc, rust-std, cargo, rust-docs, rustfmt, clippy
+profile = "default"            # rustc, rust-std, cargo, rust-docs, rustfmt, clippy
