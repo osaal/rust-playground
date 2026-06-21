@@ -6,4 +6,5 @@ members = [
     "rng-provider",
     "number_formats",
     "typeform",
+    "brainfk",
 ]
