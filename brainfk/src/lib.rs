@@ -55,30 +55,44 @@ pub mod interpreter {
             while let Some(val) = input.get(self.input_idx) {
                 match val {
                     '+' => self.output[self.output_idx] += 1,
-                    '-' => self.output[self.output_idx] -= 1,
+                    '-' => {
+                        dbg!(self.input_idx);
+                        dbg!(self.output_idx);
+                        dbg!(self.output[self.output_idx]);
+                        self.output[self.output_idx] -= 1
+                    }
                     '<' => self.output_idx -= 1,
                     '>' => self.output_idx += 1,
                     '[' => {
                         self.ret_stack.push(self.input_idx - 1); // Store return address
                         if self.output[self.output_idx] != 0 {
                             self.stack.push(self.output_idx);
+                            println!("Pushed output idx {} to stack", self.output_idx);
                         }
                     }
                     ']' => {
                         if self.output[self.output_idx] != 0 {
                             self.output_idx = match self.stack.pop() {
                                 Some(val) => val,
-                                None => return Err("Unmatched command `]`".into()),
+                                None => {
+                                    dbg!(self.input_idx);
+                                    dbg!(self.output_idx);
+                                    dbg!(self.output[self.output_idx]);
+                                    dbg!(self.stack);
+                                    dbg!(self.ret_stack);
+                                    return Err("Unmatched command `]`".into());
+                                }
                             };
                             self.input_idx = match self.ret_stack.pop() {
                                 Some(val) => val,
                                 None => return Err("what".into()),
                             };
+                        } else {
+                            // Cleanup before exiting loop
+                            // (infallible operations, no need to check return values)
+                            let _ = self.stack.pop();
+                            let _ = self.ret_stack.pop();
                         }
-                        // Cleanup before exiting loop
-                        // (infallible operations, no need to check return values)
-                        let _ = self.stack.pop();
-                        let _ = self.ret_stack.pop();
                     }
                     '.' => println!("{}", self.output[self.output_idx]),
                     ',' => continue,
@@ -89,7 +103,6 @@ pub mod interpreter {
                 }
                 self.input_idx += 1;
             }
-            //println!("Output array: {:?}", self.output);
             // Return the converted String
             Ok(())
         }
